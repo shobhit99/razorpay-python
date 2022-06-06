@@ -39,13 +39,14 @@ class Client:
         'base_url': URL.BASE_URL
     }
 
-    def __init__(self, session=None, auth=None, **options):
+    def __init__(self, session=None, auth=None, access_token=None, **options):
         """
         Initialize a Client object with session,
         optional auth handler, and options
         """
         self.session = session or requests.Session()
         self.auth = auth
+        self.access_token = access_token
         file_dir = os.path.dirname(__file__)
         self.cert_path = file_dir + '/ca-bundle.crt'
 
@@ -78,6 +79,19 @@ class Client:
             options['headers']['User-Agent'] = user_agent
         else:
             options['headers'] = {'User-Agent': user_agent}
+
+        return options
+
+    def _add_authorization_header(self, options):
+        if not self.access_token:
+            return options
+
+        auth_header = 'Bearer {}'.format(self.access_token)
+
+        if 'headers' in options:
+            options['headers']['Authorization'] = auth_header
+        else:
+            options['headers'] = {'Authorization': auth_header}
 
         return options
 
@@ -114,6 +128,7 @@ class Client:
         Dispatches a request to the Razorpay HTTP API
         """
         options = self._update_user_agent_header(options)
+        options = self._add_authorization_header(options)
 
         url = "{}{}".format(self.base_url, path)
 
